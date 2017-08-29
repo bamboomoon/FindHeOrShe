@@ -1,35 +1,39 @@
 package main
 
 import (
-	"NeteaseCloudMusic/netMusic"
 	"fmt"
-	"time"
-	// "./netMusic"
+
+	"./netMusic"
 )
 
 func main() {
-	ip, err := netMusic.GetProxyIP()
-	if err != nil {
-		fmt.Println("获取代理ip 出错了", err)
-		return
-	}
-	fmt.Println(ip, ip.Proxies[0].HTTP)
-	return
-	ch := make(chan uint32, 10)
+	begin()
 
+}
+
+func begin() {
+	okIP := netMusic.GetOkProxyIP()
+
+	//page
+	ch := make(chan uint32, 40)
 	ch <- uint32(0)
-	i := 0
-	page := 0
+
+	//线程数量
+	count := 0
+	httPIP := okIP[0]
+	fmt.Println("okip", httPIP)
 	for netMusic.IsContinue {
-		page++
-		for i == 20 {
-			time.Sleep(time.Second * time.Duration(5))
-			i = 0
+
+		if count == 40 {
+			netMusic.Wg.Wait()
+			count = 0
 		}
-		i++
+		count++
 		netMusic.Wg.Add(1)
-		go netMusic.GetComments(ch)
+		go netMusic.GetComments(ch, httPIP)
 	}
+	fmt.Println("循环结束了")
 	netMusic.Wg.Wait()
-	fmt.Println("main over")
+	fmt.Println("查找完毕！！！")
+
 }

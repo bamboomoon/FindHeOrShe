@@ -1,52 +1,26 @@
 package netMusic
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
-	"sync"
 	"time"
 )
 
-type commentMusic struct {
-	HotComments []user
-	Comments    []user
-	Total       uint64
+type requestClient struct {
 }
 
-type user struct {
-	User    userName
-	Content string
-}
-type userName struct {
-	Nickname string
-}
-
-//RequestParam post request body
-type RequestParam struct {
-	Offset    uint32 `json:"offset"`
-	Rid       string `json:"rid"`
-	Limit     int    `json:"limit"`
-	CsrfToken string `json:"csrf_token"`
-}
-
-var findUseName = "在流浪路上越走越远"
-var IsContinue = true
-var Wg = sync.WaitGroup{}
-var total uint64
-
-func proxyClient() *http.Client {
+func proxyClient(proxyIP string, timeOut int) *http.Client {
 	proxy := func(_ *http.Request) (*url.URL, error) {
-		return url.Parse("http://61.136.163.246:80")
+		return url.Parse(fmt.Sprintf("http://%s", proxyIP))
+		//("http://183.230.157.197:8080")
+		//
 	}
-	//Proxy: proxy,
+
 	t := &http.Transport{Proxy: proxy}
-	c := http.Client{Timeout: time.Duration(1) * time.Minute, Transport: t}
+	c := http.Client{Timeout: time.Duration(timeOut) * time.Second, Transport: t}
 	return &c
 }
 
@@ -74,10 +48,11 @@ func randomUserAgent() string {
 	pos := r.Intn(len(userAgentList))
 	return userAgentList[pos]
 }
-func clientRequest(page uint32, rid string) (*http.Response, error) {
+
+func clientRequest(page uint32, rid string, proxyIP string) (*http.Response, error) {
 	parsms := RequestParam{Offset: page * 100, Limit: 100, Rid: rid, CsrfToken: ""} //uint64(page) * 100,
 	body, err := Encrypt(&parsms)
-	catchError(err)
+	catchError(err, 53)
 
 	urlStr := fmt.Sprintf("http://music.163.com/weapi/v1/resource/comments/R_SO_4_%s/?csrf_token=", rid)
 	v := url.Values{}
@@ -100,70 +75,5 @@ func clientRequest(page uint32, rid string) (*http.Response, error) {
 		request.Header.Set(k, v)
 	}
 
-	return proxyClient().Do(request)
-}
-
-//GetComments get comment model
-func GetComments(ch chan uint32) {
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println(err)
-		}
-
-		// fmt.Println("Done")
-		Wg.Done()
-	}()
-	page := <-ch //read
-	if total != 0 && uint64(page*100) > total {
-		fmt.Println("uint64(page*100) > total：", page, total)
-		IsContinue = false
-		ch <- page + 1
-		return
-	}
-
-	ch <- page + 1
-	resp, err := clientRequest(page, "436514312")
-	catchError(err)
-	if resp == nil {
-		return
-	}
-
-	p, err := ioutil.ReadAll(resp.Body)
-	catchError(err)
-
-	defer func() {
-		if resp != nil {
-			resp.Body.Close()
-		}
-	}()
-	if len(p) == 0 {
-		fmt.Println("数据获取失败")
-		os.Exit(-1)
-	}
-
-	var comment commentMusic
-	err = json.Unmarshal(p, &comment)
-	if err != nil {
-		panic(err)
-	}
-	findComment(&comment)
-
-}
-
-func findComment(comment *commentMusic) {
-	total = comment.Total //comment total
-	for _, userCommtent := range comment.Comments {
-		// fmt.Println(userCommtent.User.Nickname, userCommtent.Content)
-		if userCommtent.User.Nickname == findUseName {
-			fmt.Println("找到了", userCommtent.Content)
-			IsContinue = false
-		}
-	}
-}
-
-//error handle
-func catchError(err error) {
-	if err != nil {
-		fmt.Println("error:", err)
-	}
+	return proxyClient(proxyIP, 30).Do(request)
 }
