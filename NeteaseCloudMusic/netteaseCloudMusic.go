@@ -13,26 +13,32 @@ func main() {
 
 func begin() {
 	okIP := netMusic.GetOkProxyIP()
-
+	ipCount := len(okIP)
+	ipIndex := 0
 	//page
 	ch := make(chan uint32, 40)
 	ch <- uint32(0)
 
-	//线程数量
+	//go数量
 	count := 0
-	httPIP := okIP[0]
-	fmt.Println("okip", httPIP)
-	for netMusic.IsContinue {
+	allCount := ipCount * 10
 
-		if count == 40 {
+	var httPIP string
+
+	for netMusic.IsContinue {
+		if ipIndex > ipCount-1 {
+			ipIndex = 0
+		}
+		httPIP = okIP[ipIndex]
+		if count == allCount {
 			netMusic.Wg.Wait()
 			count = 0
 		}
 		count++
+		ipIndex++
 		netMusic.Wg.Add(1)
 		go netMusic.GetComments(ch, httPIP)
 	}
-	fmt.Println("循环结束了")
 	netMusic.Wg.Wait()
 	fmt.Println("查找完毕！！！")
 
