@@ -6,15 +6,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sync"
 )
 
 // ProxyIP  代理IP
 type ProxyIP struct {
-	Proxies []ip //`json:"proxies"`
+	Proxies []Ip //`json:"proxies"`
 	Code    int  //`json:"code"`
 }
 
-type ip struct {
+type Ip struct {
 	HTTP string //`json:"http"`
 }
 
@@ -40,22 +41,38 @@ func GetProxyIP() (*ProxyIP, error) {
 }
 
 func GetOkProxyIP() []string {
+	fmt.Println("正在获取代理IP:")
 	ip, err := GetProxyIP()
 	if err != nil || ip.Code != 1 {
 		fmt.Println("获取代理IP error:", err)
 		os.Exit(-1)
 	}
 	var okIP []string
+	var sn sync.Mutex
+	var wg sync.WaitGroup
 	for _, v := range ip.Proxies {
-		c := proxyClient(v.HTTP, 10)
-		fmt.Println(v.HTTP)
-		resp, err := c.Get("http://music.163.com")
-		if err != nil {
-			continue
-		}
-		if resp.StatusCode == 200 {
-			okIP = append(okIP, v.HTTP)
-		}
+
+		wg.Add(1)
+		go func(http string) {
+			defer wg.Done()
+
+			c := proxyClient(http, 10)
+			resp, err := c.Get("http://music.163.com")
+			if err != nil {
+				return
+			}
+			if resp.StatusCode == 200 && resp.ContentLength != 0 {
+				fmt.Println(http)
+				sn.Lock()
+				okIP = append(okIP, http)
+				sn.Unlock()
+			}
+		}(v.HTTP)
+	}
+	wg.Wait()
+	if len(okIP) == 0 {
+		fmt.Println("无可用代理IP")
+		os.Exit(-1)
 	}
 	return okIP
 }

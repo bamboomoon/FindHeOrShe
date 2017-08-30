@@ -29,35 +29,45 @@ type RequestParam struct {
 	CsrfToken string `json:"csrf_token"`
 }
 
-var findUseName = "一叶倾城"
+//FindUseName 查找的用户名
+var FindUseName string
+
+//SongID 查找的歌曲ID
+var SongID string
+
+var once1 sync.Once
+var once2 sync.Once
 
 //IsContinue 是否继续获取评论
 var IsContinue = true
 
-// var sn *sync.Mutex
-var IsChangeIP bool
-
-//Wg main同步
-var Wg = sync.WaitGroup{}
+//WgRquest 请求获取评论main同步
+var WgRquest = sync.WaitGroup{}
+var WgDealComment = sync.WaitGroup{}
 var total uint64
+
+//验证用户名和ip是否有提供
+func doCheck() {
+	if FindUseName == "" || SongID == "" {
+		fmt.Println("\n未提供需要查找的用户名或者歌曲ID")
+		os.Exit(-1)
+	}
+}
 
 //GetComments get comment model
 func GetComments(ch chan uint32, proxyIP string) {
-
+	once1.Do(doCheck)
 	page := <-ch //read
 
 	defer func() {
 		if err := recover(); err != nil {
 
-			// sn.Lock()
-			IsChangeIP = true
-			// sn.Unlock()
 		}
-		Wg.Done()
+		WgRquest.Done()
 	}()
 	getCommentsCount := uint64(page * 100)
 	if total != 0 && getCommentsCount > total && getCommentsCount-total > 100 {
-		fmt.Println("uint64(page*100) > total：", page, total)
+		// fmt.Println("uint64(page*100) > total：", page, total)
 		IsContinue = false
 		ch <- page + 1
 		return
@@ -65,7 +75,7 @@ func GetComments(ch chan uint32, proxyIP string) {
 
 	ch <- page + 1
 
-	resp, err := clientRequest(page, "65538", proxyIP)
+	resp, err := clientRequest(page, SongID, proxyIP)
 	catchError(err, 67)
 	if resp == nil || resp.StatusCode != 200 {
 		panic(resp.StatusCode)
@@ -92,12 +102,19 @@ func GetComments(ch chan uint32, proxyIP string) {
 }
 
 func findComment(comment *commentMusic, page uint32) {
-	total = comment.Total //comment total
-	for _, userCommtent := range comment.Comments {
-		if userCommtent.User.Nickname == findUseName {
-			fmt.Println("找到了---", userCommtent)
+	once2.Do(func() {
+		total = comment.Total //comment total
+		fmt.Println("总评论数:", total)
+	})
+	WgDealComment.Add(1)
+	go func(comment *commentMusic) {
+		defer WgDealComment.Done()
+		for _, userCommtent := range comment.Comments {
+			if userCommtent.User.Nickname == FindUseName {
+				fmt.Println("找到了---", userCommtent.Content)
+			}
 		}
-	}
+	}(comment)
 }
 
 //error handle
