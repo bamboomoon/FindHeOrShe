@@ -56,11 +56,17 @@ func getOkProxyIP() []string {
 		go func(http string) {
 			defer wg.Done()
 
-			_, err := sendRequest(0, http)
+			comment, err := sendRequest(1, http)
 			if err != nil {
 				return
 			}
-
+			once.Do(func() {
+				total = comment.Total //comment total
+				if total == 0 {
+					fmt.Println("总评论数为0")
+					os.Exit(-1)
+				}
+			})
 			fmt.Println(http)
 			sn.Lock()
 			okIP = append(okIP, http)

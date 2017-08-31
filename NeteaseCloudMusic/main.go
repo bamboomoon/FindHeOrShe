@@ -1,8 +1,6 @@
 package main
 
-import (
-	"./netMusic"
-)
+import "./netMusic"
 
 func main() {
 	netMusic.Begin()

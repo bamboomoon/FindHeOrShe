@@ -2,9 +2,9 @@ package netMusic
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 )
 
 type commentMusic struct {
@@ -72,7 +72,7 @@ func sendRequest(page uint32, proxyIP string) (*commentMusic, error) {
 		return nil, err
 	}
 	if resp == nil || resp.StatusCode != 200 {
-		panic(resp.StatusCode)
+		return nil, errors.New(resp.Status)
 	}
 
 	p, err := ioutil.ReadAll(resp.Body)
@@ -85,12 +85,6 @@ func sendRequest(page uint32, proxyIP string) (*commentMusic, error) {
 			resp.Body.Close()
 		}
 	}()
-
-	if len(p) == 0 {
-		fmt.Println("数据获取失败")
-		os.Exit(-1)
-	}
-
 	var comment commentMusic
 	err = json.Unmarshal(p, &comment)
 	if err != nil {
@@ -100,10 +94,6 @@ func sendRequest(page uint32, proxyIP string) (*commentMusic, error) {
 }
 
 func findComment(comment *commentMusic, page uint32) {
-	once.Do(func() {
-		total = comment.Total //comment total
-		fmt.Println("总评论数:", total)
-	})
 	wgDealComment.Add(1)
 	go func(comment *commentMusic) {
 		defer wgDealComment.Done()

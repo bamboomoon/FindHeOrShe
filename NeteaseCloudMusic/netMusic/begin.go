@@ -68,7 +68,7 @@ func stdinUserNameAndID() bool {
 	if songID == "" || findUseName == "" {
 		panic(errors.New("歌曲ID获取或者用户名不能为空"))
 	}
-	fmt.Println("你的输入为-", "查找用户名:", findUseName, "查找歌曲ID:", songID)
+	fmt.Println("您输入的查找的用户名为:", findUseName, "查找的歌曲ID:", songID)
 	fmt.Println("请确认(y/n)")
 	var correct string
 	fmt.Scanln(&correct)
@@ -97,7 +97,9 @@ func Begin() {
 	//goroutine数量
 	count := 0
 	allCount := ipCount * 10
+
 	fmt.Printf("开始查找『%s』在「%s」下的评论:\n", findUseName, songID)
+	fmt.Println("总评论数:", total)
 	for isContinue {
 		if ipIndex > ipCount-1 {
 			ipIndex = 0
@@ -116,8 +118,6 @@ func Begin() {
 	wgDealComment.Wait()
 
 	//处理错误页
-	fmt.Println("正在重新获取没有获取到的评论:")
-
 	timer := time.NewTimer(time.Duration(5) * time.Minute)
 	go func() {
 		<-timer.C
@@ -126,7 +126,6 @@ func Begin() {
 	}()
 
 	for len(errosPages) > 0 {
-		fmt.Println("正在重新获取没有获取到的评论:")
 		dealErrorPage()
 	}
 	fmt.Println("查找完毕！！！")
@@ -143,6 +142,7 @@ func dealErrorPage() {
 			ipIndex = 0
 		}
 		wgDealErros.Add(1)
+		fmt.Printf("正在重新获取%d页\n", v)
 		go getComments(v, okIPs[ipIndex], true)
 		ipIndex++
 		newErrorPages = append(errosPages[:i], errosPages[i+1:]...) //移除使用了的
