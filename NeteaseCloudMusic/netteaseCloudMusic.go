@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	stdinUserNameAndID()
+	begin()
 }
 func stdinUserNameAndID() {
 	defer func() {
@@ -44,7 +44,9 @@ func stdinUserNameAndID() {
 	} else {
 		netMusic.FindUseName = os.Args[4]
 	}
-
+	if netMusic.SongID == "" || netMusic.FindUseName == "" {
+		panic(errors.New("歌曲ID获取或者用户名不能为空"))
+	}
 	fmt.Println("你的输入为-", "查找用户名:", netMusic.FindUseName, "查找歌曲ID:", netMusic.SongID)
 	fmt.Println("请确认(y/n)")
 	var correct string
@@ -56,6 +58,8 @@ func stdinUserNameAndID() {
 	}
 }
 func begin() {
+	stdinUserNameAndID()
+
 	//代理IP
 	okIP := netMusic.GetOkProxyIP()
 	ipCount := len(okIP)

@@ -35,8 +35,7 @@ var FindUseName string
 //SongID 查找的歌曲ID
 var SongID string
 
-var once1 sync.Once
-var once2 sync.Once
+var once sync.Once
 
 //IsContinue 是否继续获取评论
 var IsContinue = true
@@ -46,17 +45,8 @@ var WgRquest = sync.WaitGroup{}
 var WgDealComment = sync.WaitGroup{}
 var total uint64
 
-//验证用户名和ip是否有提供
-func doCheck() {
-	if FindUseName == "" || SongID == "" {
-		fmt.Println("\n未提供需要查找的用户名或者歌曲ID")
-		os.Exit(-1)
-	}
-}
-
 //GetComments get comment model
 func GetComments(ch chan uint32, proxyIP string) {
-	once1.Do(doCheck)
 	page := <-ch //read
 
 	defer func() {
@@ -75,14 +65,27 @@ func GetComments(ch chan uint32, proxyIP string) {
 
 	ch <- page + 1
 
+	comments, err := sendRequest(page, proxyIP)
+	if err != nil {
+		fmt.Printf("第%d页没有获取到\n", page)
+		return
+	}
+	findComment(comments, page)
+}
+
+func sendRequest(page uint32, proxyIP string) (*commentMusic, error) {
 	resp, err := clientRequest(page, SongID, proxyIP)
-	catchError(err, 67)
+	if err != nil {
+		return nil, err
+	}
 	if resp == nil || resp.StatusCode != 200 {
 		panic(resp.StatusCode)
 	}
 
 	p, err := ioutil.ReadAll(resp.Body)
-	catchError(err, 73)
+	if err != nil {
+		return nil, err
+	}
 
 	defer func() {
 		if resp != nil {
@@ -97,12 +100,14 @@ func GetComments(ch chan uint32, proxyIP string) {
 
 	var comment commentMusic
 	err = json.Unmarshal(p, &comment)
-	catchError(err, 88)
-	findComment(&comment, page)
+	if err != nil {
+		return nil, err
+	}
+	return &comment, nil
 }
 
 func findComment(comment *commentMusic, page uint32) {
-	once2.Do(func() {
+	once.Do(func() {
 		total = comment.Total //comment total
 		fmt.Println("总评论数:", total)
 	})

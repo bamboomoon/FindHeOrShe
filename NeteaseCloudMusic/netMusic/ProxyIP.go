@@ -56,17 +56,16 @@ func GetOkProxyIP() []string {
 		go func(http string) {
 			defer wg.Done()
 
-			c := proxyClient(http, 10)
-			resp, err := c.Get("http://music.163.com")
+			_, err := sendRequest(0, http)
 			if err != nil {
 				return
 			}
-			if resp.StatusCode == 200 && resp.ContentLength != 0 {
-				fmt.Println(http)
-				sn.Lock()
-				okIP = append(okIP, http)
-				sn.Unlock()
-			}
+
+			fmt.Println(http)
+			sn.Lock()
+			okIP = append(okIP, http)
+			sn.Unlock()
+
 		}(v.HTTP)
 	}
 	wg.Wait()
