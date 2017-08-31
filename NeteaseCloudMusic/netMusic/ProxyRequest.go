@@ -75,5 +75,5 @@ func clientRequest(page uint32, rid string, proxyIP string) (*http.Response, err
 		request.Header.Set(k, v)
 	}
 
-	return proxyClient(proxyIP, 30).Do(request)
+	return proxyClient(proxyIP, 5).Do(request)
 }

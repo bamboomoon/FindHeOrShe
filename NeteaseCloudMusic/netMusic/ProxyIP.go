@@ -40,7 +40,7 @@ func GetProxyIP() (*ProxyIP, error) {
 	return &proxy, nil
 }
 
-func GetOkProxyIP() []string {
+func getOkProxyIP() []string {
 	fmt.Println("正在获取代理IP:")
 	ip, err := GetProxyIP()
 	if err != nil || ip.Code != 1 {
