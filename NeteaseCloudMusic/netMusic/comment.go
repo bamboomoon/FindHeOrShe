@@ -58,9 +58,9 @@ func getComments(page uint32, proxyIP string, isDealErr bool) {
 	comments, err := sendRequest(page, proxyIP)
 	if err != nil {
 		fmt.Printf("第%d页没有获取到\n", page)
-		sn.Lock()
+		rw.Lock()
 		errosPages = append(errosPages, page)
-		sn.Unlock()
+		rw.Unlock()
 		return
 	}
 	findComment(comments, page)
@@ -85,6 +85,7 @@ func sendRequest(page uint32, proxyIP string) (*commentMusic, error) {
 			resp.Body.Close()
 		}
 	}()
+
 	var comment commentMusic
 	err = json.Unmarshal(p, &comment)
 	if err != nil {

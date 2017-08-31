@@ -26,7 +26,7 @@ var wgDealComment = sync.WaitGroup{}
 var total uint64
 
 //错误页 重新获取
-var sn sync.Mutex
+var rw sync.Mutex
 var errosPages []uint32
 var wgDealErros = sync.WaitGroup{}
 
@@ -125,7 +125,7 @@ func Begin() {
 		os.Exit(-1)
 	}()
 
-	for len(errosPages) > 0 {
+	if len(errosPages) > 0 {
 		dealErrorPage()
 	}
 	fmt.Println("查找完毕！！！")
@@ -136,8 +136,8 @@ func Begin() {
 func dealErrorPage() {
 	ipCount := len(okIPs)
 	ipIndex := 0
-	var newErrorPages []uint32
-	for i, v := range errosPages {
+
+	for _, v := range errosPages {
 		if ipIndex >= ipCount {
 			ipIndex = 0
 		}
@@ -145,8 +145,7 @@ func dealErrorPage() {
 		fmt.Printf("正在重新获取第%d页\n", v)
 		go getComments(v, okIPs[ipIndex], true)
 		ipIndex++
-		newErrorPages = append(errosPages[:i], errosPages[i+1:]...) //移除使用了的
 	}
-	errosPages = newErrorPages
+
 	wgDealErros.Wait()
 }
