@@ -99,7 +99,7 @@ func findComment(comment *commentMusic, page uint32) {
 		defer wgDealComment.Done()
 		for _, userCommtent := range comment.Comments {
 			if userCommtent.User.Nickname == findUseName {
-				fmt.Println("找到了---", userCommtent.Content)
+				fmt.Printf("找到了:%s\n", userCommtent.Content)
 			}
 		}
 	}(comment)

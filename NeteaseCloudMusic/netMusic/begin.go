@@ -142,7 +142,7 @@ func dealErrorPage() {
 			ipIndex = 0
 		}
 		wgDealErros.Add(1)
-		fmt.Printf("正在重新获取%d页\n", v)
+		fmt.Printf("正在重新获取第%d页\n", v)
 		go getComments(v, okIPs[ipIndex], true)
 		ipIndex++
 		newErrorPages = append(errosPages[:i], errosPages[i+1:]...) //移除使用了的
