@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"sync"
 )
 
 type commentMusic struct {
@@ -27,6 +28,9 @@ type RequestParam struct {
 	Limit     int    `json:"limit"`
 	CsrfToken string `json:"csrf_token"`
 }
+
+var findedSync sync.Mutex
+var searchCommens []string //已经找到的
 
 //GetComments 内部获取页数
 func getPageThenBegin(ch chan uint32, proxyIP string) {
@@ -51,6 +55,7 @@ func getPageThenBegin(ch chan uint32, proxyIP string) {
 }
 
 //外部传入页数
+//处理错误页使用
 func getComments(page uint32, proxyIP string, isDealErr bool) {
 	if isDealErr {
 		defer wgDealErros.Done()
@@ -67,7 +72,7 @@ func getComments(page uint32, proxyIP string, isDealErr bool) {
 }
 
 func sendRequest(page uint32, proxyIP string) (*commentMusic, error) {
-	resp, err := clientRequest(page, songID, proxyIP)
+	resp, err := commentReq(page, songID, proxyIP)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +105,9 @@ func findComment(comment *commentMusic, page uint32) {
 		defer wgDealComment.Done()
 		for _, userCommtent := range comment.Comments {
 			if userCommtent.User.Nickname == findUseName {
-				fmt.Printf("找到了:%s\n", userCommtent.Content)
+				findedSync.Lock()
+				searchCommens = append(searchCommens, userCommtent.Content)
+				findedSync.Unlock()
 			}
 		}
 	}(comment)

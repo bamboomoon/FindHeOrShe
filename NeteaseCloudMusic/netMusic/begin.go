@@ -39,7 +39,6 @@ func stdinUserNameAndID() bool {
 			fmt.Println(err)
 		}
 	}()
-	fmt.Println(len(os.Args))
 	if len(os.Args) != 5 {
 		panic(errors.New("命令有误"))
 	}
@@ -129,7 +128,7 @@ func Begin() {
 		dealErrorPage()
 	}
 	fmt.Println("查找完毕！！！")
-
+	printSearchedComment()
 }
 
 //处理没有获出错了的页面的评论
@@ -148,4 +147,11 @@ func dealErrorPage() {
 	}
 
 	wgDealErros.Wait()
+}
+
+func printSearchedComment() {
+	fmt.Printf("共找到%d条评论:\n", len(searchCommens))
+	for k, v := range searchCommens {
+		fmt.Println(k, ": ", v)
+	}
 }

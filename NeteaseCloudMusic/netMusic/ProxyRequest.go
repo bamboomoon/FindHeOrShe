@@ -2,6 +2,7 @@ package netMusic
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -15,8 +16,6 @@ type requestClient struct {
 func proxyClient(proxyIP string, timeOut int) *http.Client {
 	proxy := func(_ *http.Request) (*url.URL, error) {
 		return url.Parse(fmt.Sprintf("http://%s", proxyIP))
-		//("http://183.230.157.197:8080")
-		//
 	}
 
 	t := &http.Transport{Proxy: proxy}
@@ -52,7 +51,9 @@ func randomUserAgent() string {
 func clientRequest(page uint32, rid string, proxyIP string) (*http.Response, error) {
 	parsms := RequestParam{Offset: page * 100, Limit: 100, Rid: rid, CsrfToken: ""} //uint64(page) * 100,
 	body, err := Encrypt(&parsms)
-	catchError(err, 53)
+	if err != nil {
+		log.Fatalln("参数加密出错")
+	}
 
 	urlStr := fmt.Sprintf("http://music.163.com/weapi/v1/resource/comments/R_SO_4_%s/?csrf_token=", rid)
 	v := url.Values{}
@@ -75,5 +76,42 @@ func clientRequest(page uint32, rid string, proxyIP string) (*http.Response, err
 		request.Header.Set(k, v)
 	}
 
+	return proxyClient(proxyIP, 5).Do(request)
+}
+
+//获取评论
+func commentReq(page uint32, rid string, proxyIP string) (*http.Response, error) {
+	params := RequestParam{Offset: page * 100, Limit: 100, Rid: rid, CsrfToken: ""} //uint64(page) * 100,
+	body, err := Encrypt(&params)
+	if err != nil {
+		log.Fatalln("参数加密出错")
+	}
+	return clientReq(rid, body, proxyIP)
+}
+
+func clientReq(id string, body *CryptBody, proxyIP string) (*http.Response, error) {
+	urlStr := fmt.Sprintf("http://music.163.com/weapi/v1/resource/comments/R_SO_4_%s/?csrf_token=", id)
+	v := url.Values{}
+	v.Set("params", body.Params)
+	v.Add("encSecKey", body.EncSecKey)
+
+	request, err := http.NewRequest("POST", urlStr, strings.NewReader(v.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	userAgent := randomUserAgent()
+	header := map[string]string{
+		"Accept":          "*/*",
+		"Accept-Language": "zh-CN,zh;q=0.8,gl;q=0.6,zh-TW;q=0.4",
+		"Connection":      "keep-alive",
+		"Content-Type":    "application/x-www-form-urlencoded",
+		"Referer":         "http://music.163.com",
+		"Host":            "music.163.com",
+		"Cookie":          "",
+		"User-Agent":      userAgent,
+	}
+	for k, v := range header {
+		request.Header.Set(k, v)
+	}
 	return proxyClient(proxyIP, 5).Do(request)
 }
