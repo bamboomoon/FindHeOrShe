@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -83,7 +84,7 @@ func Begin() {
 	if isBegin == false {
 		os.Exit(-1)
 	}
-
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	//代理IP
 	okIPs = getOkProxyIP()
 	ipCount := len(okIPs)
@@ -152,6 +153,6 @@ func dealErrorPage() {
 func printSearchedComment() {
 	fmt.Printf("共找到%d条评论:\n", len(searchCommens))
 	for k, v := range searchCommens {
-		fmt.Println(k, ": ", v)
+		fmt.Println(k+1, ": ", v)
 	}
 }
